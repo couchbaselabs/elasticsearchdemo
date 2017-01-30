@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<title>
+Elasticsearch-Couchbase Query Demonstration
+</title>
+</head>
+
+<style>
+div.retrievalsContentBox 
+{
+	overflow: scroll;
+}
+</style>
+
+<body>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script type = "text/javascript" language = "javascript">
+
+// This page presents a series of radio-buttons, whereby the user can select a
+// beer-style. Based on the selection, a query is launched on an instance of
+// Elasticsearch, by means of an accompanying node.js program. The brewery IDs
+// returned are displayed; and simultaneously, a further query, based on the IDs,
+// is performed on an instance of Couchbase, again by means of an accompanying
+// node.js program. Couchbase results are also displayed.
+
+$(document).ready(function() 
+{
+	// When the user left-clicks the "Query Elasticsearch" button, contact is attempted
+	// with the node.js program esNodeJsQueryAgent.js. A beer-style, selected interactively
+	// by the user from the availableBeerStylesDialog, is passed to esNodeJsQueryAgent.js, 
+	// which then performs an appropriate query on Elasticsearch. The retrieved data is
+	// returned here, and the brewery-IDs corresponding to the beer style are prepared for
+	// a search on Couchbase.
+	//		
+    $("#queryElasticsearch").click(function(event)
+    {  
+    	// Get the user's radio-button selection, which corresonds to a particular
+    	// beer style.
+    	// 
+    	var beerStyles = document.getElementsByName("beerStyle");
+    	var selectedBeerValue = 0;
+    	var selectedBeerStyle = "";
+    	
+		for (var i = 0; i < beerStyles.length; i++) 
+		{
+			if (beerStyles[i].checked == true) 
+			{
+				selectedBeerValue = beerStyles[i].value;
+			}
+		}
+		
+		// Establish the beer-style, based on the value returned from the selection.
+		//
+		if (selectedBeerValue == 0)
+		{
+			selectedBeerStyle = "American-Style Pale Ale";
+		} 
+		else 
+		{
+			if (selectedBeerValue == 1)
+			{
+				selectedBeerStyle = "American-Style Brown Ale";
+			}
+			else
+			{
+				if (selectedBeerValue == 2)
+				{
+					selectedBeerStyle = "Imperial or double India Pale Ale";
+				}
+				else
+				{
+					if (selectedBeerValue == 3)
+					{
+						selectedBeerStyle = "Classic English-Style Pale Ale";
+					}
+					else
+					{
+						if (selectedBeerValue == 4)
+						{
+							selectedBeerStyle = "Extra Special Bitter AND British Ale";
+						}
+					}	
+				}
+			}	
+		}
+		
+    	// Create a target URL, featuring the address and port on which 
+    	// esNodeJsQueryAgent.js is listening; plus a parameter-name and value; the value 
+    	// being the Lucene string constituting the query to be run.
+		//
+        var esNodeJsAddress = "http://localhost:8081/";
+        var esNodeJsTargetURL = esNodeJsAddress + '?' + "foo=" + selectedBeerStyle;
+		
+		// Pass the query to esNodeJsQueryAgent.js, and retrieve the data returned.
+		//
+		$.getJSON(esNodeJsTargetURL, function(dataFromElasticsearch)  
+		{
+			// A string with which to display results in the browser.
+			//
+			var esDataDisplayString = "";
+			
+			// Variable to hold the number of IDs returned from Elasticsearch.
+			//
+			var numberOfIds = 0;
+			
+			// When a data-value is returned, it is an array of JSON-objects. Go through
+			// the array, and build a string featuring the ID element of each object. Count
+			// the number of IDs as we progress.
+			//
+			$.each(dataFromElasticsearch, function(key, val) 
+			{	
+        		esDataDisplayString = esDataDisplayString + '<p>' 
+        						+ dataFromElasticsearch[key]._id + '</p>';
+        		numberOfIds++;
+    		});
+    		
+    		// Display the IDs returned from Elasticsearch.
+    		//
+    		document.getElementById('ElasticSearchRetrievalsContent').innerHTML 
+    														= esDataDisplayString;
+    		
+    		// Now that the IDs have been returned from Elasticsearch, prepared to do a  
+    		// Couchbase Server query based on them.
+    		//
+			// Create the target URL, featuring the address and port of 
+			// cbNodeJsQueryAgent.js (which will perform the search), and the 
+			// query-parameter name and value for an id to be searched on,
+			// in Couchbase.
+			//
+			var cbNodeJsAddress = "http://localhost:8080/";
+			var keyNameForID = "id_name";
+			
+			// String that will contain all document-information returned from 
+			// Couchbase, and will be displayed in the browser-window.
+			//
+			var cbDataDisplayString = "";
+			
+			// Go through the data returned from Elasticsearch, and from each document, pull
+			// the ID. Then pass the ID to cbNodeJsQueryAgent, which makes the query and returns
+			// a corresponding Couchbase document.
+			//
+			//  Variable to hold the target URL that we will now create.
+			//
+			var cbNodeJsTargetURL = "";
+			
+			// Array-variable to hold all the Couchbase IDs that we have pulled from
+			// Elasticsearch. We will send these to Couchbase.
+			//
+			var returnedCouchbaseIDs = [];
+			
+			// Load up the array with Couchbase IDs returned from Elasticsearch.
+			//
+			for (var currentESdoc = 0; currentESdoc < numberOfIds; currentESdoc++)
+			{	
+				returnedCouchbaseIDs[currentESdoc] = dataFromElasticsearch[currentESdoc]._id;
+			}
+			
+			// Stringify the array, ready to be made a value in a key-value pair.
+			//
+			var returnedCouchbaseIDsStringed = JSON.stringify(returnedCouchbaseIDs);
+			
+			// Key-name for the key-value pair. This name is known to cbNodeJsQueryAgent.
+			//
+			var keyNameForIDparam = "array";
+			
+			// Key-name for the key-value pair that specifies the number of IDs. This name
+			// also is known to cbNodeJsQueryAgent.
+			//
+			var countKey = "count";
+
+			// Create the target URL, featuring the address, and the key-value pairs for the ID-array
+			// and the number of IDs.
+			//
+			cbNodeJsTargetURL = cbNodeJsAddress + '?' + keyNameForIDparam + '=' 
+								+ returnedCouchbaseIDsStringed + '&' + countKey + '=' + numberOfIds;
+
+			// Contact cbNodeJsQueryAgent, and grab the documents it returns based on the
+			// IDs we supply.
+			//
+			$.getJSON(cbNodeJsTargetURL, function(dataReturnedFromCouchbase) 
+			{	
+				// For each of the returned documents...
+				//									
+				for (var currentKeyPosition = 0; currentKeyPosition < numberOfIds; currentKeyPosition++)
+				{	
+					// Grab the current returned document, and add its key and value elements to
+					// the string we use for display.
+					//					
+					$.each(JSON.parse(dataReturnedFromCouchbase[currentKeyPosition]), function(key, val) 
+					{
+						cbDataDisplayString =  '<p>' + cbDataDisplayString 
+										+ "\"" + key + "\"" + " : " + "\"" + val + "\"" + '</p>';
+					});
+						
+					// Add vertical space after the current Couchbase document.
+					//
+					cbDataDisplayString = cbDataDisplayString + '</br></br></br>';
+				}
+					
+				// Update the display with the string containing all the key-value pairs
+				// from all the returned documents.
+				//
+				document.getElementById('CouchbaseRetrievalsContent').innerHTML 
+									= cbDataDisplayString;
+			});
+        });
+   	});	  			
+});	
+    
+</script>   
+
+<!-- Initial dialog, presenting to the user a choice of three possible subscriptions, one to be selected by means of radio-button. -->
+
+    <div id="availableBeerStylesDialog" class="availableBeerStylesDialog" style="position: absolute;  top: 20px; left: 20px; width: 350px; height: 320px; border: 4px solid #599bb3; box-shadow: 2px 8px 16px 0px rgba(0,0,0,0.2); background-color: #FFFFFF;">
+
+        <div id="availableBeerStylesTitle" style="position: relative; top: 10px; left: 10px; width: 330px; height: 40px; border: 0px solid #599bb3; background-color: #599bb3; font-family: Helvetica; color: black; font-size: 16pt;">
+            <div>
+                <span style="position: absolute; font-family: Verdana; color: white; font-size: 16pt; padding-top: 6px; padding-left: 50px;">Available Beer-Styles
+                </span>
+            </div>
+        </div>
+
+        <form name="availableBeerStylesForm" style="position: relative; top: 24px; left: 10px">
+
+            <div id="firstBeerStyle" style="position: relative; top: 10px; left: 20px; width: 290px; height: 40px; border: 0px solid #599bb3; background-color: #FFFFFF; font-family: Helvetica; color: black; font-size: 12pt;">
+                <input type="radio" id="11385" name="beerStyle" value="0" checked="checked">
+                American Style Pale Ale<br>
+            </div>
+
+            <div id="secondBeerStyle" style="position: relative; top: 10px; left: 20px; width: 290px; height: 40px; border: 0px solid #599bb3; background-color: #FFFFFF; font-family: Helvetica; color: black; font-size: 12pt;">
+                <input type="radio" id="11585" name="beerStyle" value="1">
+                American Style Brown Ale<br>
+            </div>
+
+            <div id="thirdBeerStyle" style="position: relative; top: 10px; left: 20px; width: 290px; height: 40px; border: 0px solid #599bb3; background-color: #FFFFFF; font-family: Helvetica; color: black; font-size: 12pt;">
+                <input type="radio" id="14997" name="beerStyle" value="2">
+                Imperial or Double India Pale Ale<br>
+            </div>
+            
+            <div id="fourthBeerStyle" style="position: relative; top: 10px; left: 20px; width: 290px; height: 40px; border: 0px solid #599bb3; background-color: #FFFFFF; font-family: Helvetica; color: black; font-size: 12pt;">
+                <input type="radio" id="14997" name="beerStyle" value="3">
+                Classic English-Style Pale Ale<br>
+            </div>
+            
+            <div id="fifthBeerStyle" style="position: relative; top: 10px; left: 20px; width: 290px; height: 40px; border: 0px solid #599bb3; background-color: #FFFFFF; font-family: Helvetica; color: black; font-size: 12pt;">
+                <input type="radio" id="14997" name="beerStyle" value="4">
+                Extra Special Bitter and British Ale
+            </div>
+            
+        </form>
+
+        <!-- Button for confirming choice made by radio-button. -->     
+            
+        <input type = "button" id = "queryElasticsearch" value = "Query Elasticsearch" style="position: relative; top: 38px; left: 90px; font-family: Helvetica; color: black; font-size: 12pt;">
+            />
+
+    </div>
+    
+    <div id="ElasticSearchRetrievalsHeaderBox" class="retrievalsHeaderBox" style="position: absolute; top: 380px; left: 30px; height 30px; width: 350px; line-height: 20px; border: 0px solid #599bb3; background-color: #ffff00;">
+
+        <span id="ElasticSearchRetrievalsHeader" style="position: absolute; top 0px; left: 2px; width: 320px; height: 20px; font-family: Helvetica; color: black; font-size: 14pt; padding: 0pt">
+            <p>
+                ElasticSearch Retrievals
+            </p>
+        </span>
+    </div>
+
+    <div id="ElasticSearchRetrievalsContentBox" class="retrievalsContentBox" style="position: absolute; top: 425px; left: 20px; width: 350px; height: 326px; border: 2px solid #599bb3; background-color: #e6f3ff;">
+
+        <span id="ElasticSearchRetrievalsContent" style="position: relative; top 10px; left: 10px; width: 330px; height: 256px; font-family: Courier; color: black; font-size: 9pt; padding: 0pt">
+            <p>
+                Couchbase IDs will appear here.
+            </p>
+        </span>
+    </div>
+    
+    </div>
+    
+    <div id="CouchbaseRetrievalsHeaderBox" class="retrievalsHeaderBox" style="position: absolute; top: 0px; left: 430px; height 30px; width: 650px; line-height: 20px; border: 0px solid #599bb3; background-color: #ffff00;">
+
+        <span id="CouchbaseRetrievalsHeader" style="position: absolute; top 0px; left: 2px; width: 320px; height: 20px; font-family: Helvetica; color: black; font-size: 14pt; padding: 0pt">
+            <p>
+                Couchbase Retrievals
+            </p>
+        </span>
+    </div>
+
+    <div id="CouchbaseRetrievalsContentBox" class="retrievalsContentBox" style="position: absolute; top: 45px; left: 420px; width: 350px; height: 705px; border: 2px solid #599bb3; background-color: #e6f3ff;">
+
+        <span id="CouchbaseRetrievalsContent" style="position: relative; top 10px; left: 10px; width: 330px; height: 690px; font-family: Courier; color: black; font-size: 9pt; padding: 0pt">
+            <p>
+                Couchbase documents will appear here.
+            </p>
+        </span>
+    </div>
+
+</body>
+
+</html>
+		
