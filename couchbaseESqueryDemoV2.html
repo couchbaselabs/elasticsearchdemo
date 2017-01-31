@@ -44,48 +44,48 @@ $(document).ready(function()
     	var selectedBeerValue = 0;
     	var selectedBeerStyle = "";
     	
-		for (var i = 0; i < beerStyles.length; i++) 
+	for (var i = 0; i < beerStyles.length; i++) 
+	{
+		if (beerStyles[i].checked == true) 
 		{
-			if (beerStyles[i].checked == true) 
-			{
-				selectedBeerValue = beerStyles[i].value;
-			}
+			selectedBeerValue = beerStyles[i].value;
 		}
-		
-		// Establish the beer-style, based on the value returned from the selection.
-		//
-		if (selectedBeerValue == 0)
+	}
+
+	// Establish the beer-style, based on the value returned from the selection.
+	//
+	if (selectedBeerValue == 0)
+	{
+		selectedBeerStyle = "American-Style Pale Ale";
+	} 
+	else 
+	{
+		if (selectedBeerValue == 1)
 		{
-			selectedBeerStyle = "American-Style Pale Ale";
-		} 
-		else 
+			selectedBeerStyle = "American-Style Brown Ale";
+		}
+		else
 		{
-			if (selectedBeerValue == 1)
+			if (selectedBeerValue == 2)
 			{
-				selectedBeerStyle = "American-Style Brown Ale";
+				selectedBeerStyle = "Imperial or double India Pale Ale";
 			}
 			else
 			{
-				if (selectedBeerValue == 2)
+				if (selectedBeerValue == 3)
 				{
-					selectedBeerStyle = "Imperial or double India Pale Ale";
+					selectedBeerStyle = "Classic English-Style Pale Ale";
 				}
 				else
 				{
-					if (selectedBeerValue == 3)
+					if (selectedBeerValue == 4)
 					{
-						selectedBeerStyle = "Classic English-Style Pale Ale";
+						selectedBeerStyle = "Extra Special Bitter AND British Ale";
 					}
-					else
-					{
-						if (selectedBeerValue == 4)
-						{
-							selectedBeerStyle = "Extra Special Bitter AND British Ale";
-						}
-					}	
-				}
-			}	
-		}
+				}	
+			}
+		}	
+	}
 		
     	// Create a target URL, featuring the address and port on which 
     	// esNodeJsQueryAgent.js is listening; plus a parameter-name and value; the value 
@@ -119,94 +119,93 @@ $(document).ready(function()
     		
     		// Display the IDs returned from Elasticsearch.
     		//
-    		document.getElementById('ElasticSearchRetrievalsContent').innerHTML 
-    														= esDataDisplayString;
+    		document.getElementById('ElasticSearchRetrievalsContent').innerHTML = esDataDisplayString;
     		
     		// Now that the IDs have been returned from Elasticsearch, prepared to do a  
     		// Couchbase Server query based on them.
     		//
-			// Create the target URL, featuring the address and port of 
-			// cbNodeJsQueryAgent.js (which will perform the search), and the 
-			// query-parameter name and value for an id to be searched on,
-			// in Couchbase.
-			//
-			var cbNodeJsAddress = "http://localhost:8080/";
-			var keyNameForID = "id_name";
-			
-			// String that will contain all document-information returned from 
-			// Couchbase, and will be displayed in the browser-window.
-			//
-			var cbDataDisplayString = "";
-			
-			// Go through the data returned from Elasticsearch, and from each document, pull
-			// the ID. Then pass the ID to cbNodeJsQueryAgent, which makes the query and returns
-			// a corresponding Couchbase document.
-			//
-			//  Variable to hold the target URL that we will now create.
-			//
-			var cbNodeJsTargetURL = "";
-			
-			// Array-variable to hold all the Couchbase IDs that we have pulled from
-			// Elasticsearch. We will send these to Couchbase.
-			//
-			var returnedCouchbaseIDs = [];
-			
-			// Load up the array with Couchbase IDs returned from Elasticsearch.
-			//
-			for (var currentESdoc = 0; currentESdoc < numberOfIds; currentESdoc++)
-			{	
-				returnedCouchbaseIDs[currentESdoc] = dataFromElasticsearch[currentESdoc]._id;
-			}
-			
-			// Stringify the array, ready to be made a value in a key-value pair.
-			//
-			var returnedCouchbaseIDsStringed = JSON.stringify(returnedCouchbaseIDs);
-			
-			// Key-name for the key-value pair. This name is known to cbNodeJsQueryAgent.
-			//
-			var keyNameForIDparam = "array";
-			
-			// Key-name for the key-value pair that specifies the number of IDs. This name
-			// also is known to cbNodeJsQueryAgent.
-			//
-			var countKey = "count";
+		// Create the target URL, featuring the address and port of 
+		// cbNodeJsQueryAgent.js (which will perform the search), and the 
+		// query-parameter name and value for an id to be searched on,
+		// in Couchbase.
+		//
+		var cbNodeJsAddress = "http://localhost:8080/";
+		var keyNameForID = "id_name";
 
-			// Create the target URL, featuring the address, and the key-value pairs for the ID-array
-			// and the number of IDs.
-			//
-			cbNodeJsTargetURL = cbNodeJsAddress + '?' + keyNameForIDparam + '=' 
-								+ returnedCouchbaseIDsStringed + '&' + countKey + '=' + numberOfIds;
+		// String that will contain all document-information returned from 
+		// Couchbase, and will be displayed in the browser-window.
+		//
+		var cbDataDisplayString = "";
 
-			// Contact cbNodeJsQueryAgent, and grab the documents it returns based on the
-			// IDs we supply.
-			//
-			$.getJSON(cbNodeJsTargetURL, function(dataReturnedFromCouchbase) 
+		// Go through the data returned from Elasticsearch, and from each document, pull
+		// the ID. Then pass the ID to cbNodeJsQueryAgent, which makes the query and returns
+		// a corresponding Couchbase document.
+		//
+		//  Variable to hold the target URL that we will now create.
+		//
+		var cbNodeJsTargetURL = "";
+
+		// Array-variable to hold all the Couchbase IDs that we have pulled from
+		// Elasticsearch. We will send these to Couchbase.
+		//
+		var returnedCouchbaseIDs = [];
+
+		// Load up the array with Couchbase IDs returned from Elasticsearch.
+		//
+		for (var currentESdoc = 0; currentESdoc < numberOfIds; currentESdoc++)
+		{	
+			returnedCouchbaseIDs[currentESdoc] = dataFromElasticsearch[currentESdoc]._id;
+		}
+
+		// Stringify the array, ready to be made a value in a key-value pair.
+		//
+		var returnedCouchbaseIDsStringed = JSON.stringify(returnedCouchbaseIDs);
+
+		// Key-name for the key-value pair. This name is known to cbNodeJsQueryAgent.
+		//
+		var keyNameForIDparam = "array";
+
+		// Key-name for the key-value pair that specifies the number of IDs. This name
+		// also is known to cbNodeJsQueryAgent.
+		//
+		var countKey = "count";
+
+		// Create the target URL, featuring the address, and the key-value pairs for the ID-array
+		// and the number of IDs.
+		//
+		cbNodeJsTargetURL = cbNodeJsAddress + '?' + keyNameForIDparam + '=' 
+							+ returnedCouchbaseIDsStringed + '&' + countKey + '=' + numberOfIds;
+
+		// Contact cbNodeJsQueryAgent, and grab the documents it returns based on the
+		// IDs we supply.
+		//
+		$.getJSON(cbNodeJsTargetURL, function(dataReturnedFromCouchbase) 
+		{	
+			// For each of the returned documents...
+			//									
+			for (var currentKeyPosition = 0; currentKeyPosition < numberOfIds; currentKeyPosition++)
 			{	
-				// For each of the returned documents...
-				//									
-				for (var currentKeyPosition = 0; currentKeyPosition < numberOfIds; currentKeyPosition++)
-				{	
-					// Grab the current returned document, and add its key and value elements to
-					// the string we use for display.
-					//					
-					$.each(JSON.parse(dataReturnedFromCouchbase[currentKeyPosition]), function(key, val) 
-					{
-						cbDataDisplayString =  '<p>' + cbDataDisplayString 
-										+ "\"" + key + "\"" + " : " + "\"" + val + "\"" + '</p>';
-					});
-						
-					// Add vertical space after the current Couchbase document.
-					//
-					cbDataDisplayString = cbDataDisplayString + '</br></br></br>';
-				}
-					
-				// Update the display with the string containing all the key-value pairs
-				// from all the returned documents.
+				// Grab the current returned document, and add its key and value elements to
+				// the string we use for display.
+				//					
+				$.each(JSON.parse(dataReturnedFromCouchbase[currentKeyPosition]), function(key, val) 
+				{
+					cbDataDisplayString =  '<p>' + cbDataDisplayString 
+									+ "\"" + key + "\"" + " : " + "\"" + val + "\"" + '</p>';
+				});
+
+				// Add vertical space after the current Couchbase document.
 				//
-				document.getElementById('CouchbaseRetrievalsContent').innerHTML 
-									= cbDataDisplayString;
+				cbDataDisplayString = cbDataDisplayString + '</br></br></br>';
+			}
+
+			// Update the display with the string containing all the key-value pairs
+			// from all the returned documents.
+			//
+			document.getElementById('CouchbaseRetrievalsContent').innerHTML 
+								= cbDataDisplayString;
 			});
-        });
+        	});
    	});	  			
 });	
     
