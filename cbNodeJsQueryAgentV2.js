@@ -27,6 +27,18 @@ http.createServer(function (request, response)
     //
     var couchbase = require("couchbase");
     var myCluster = new couchbase.Cluster('couchbase://localhost');
+    
+    // The following line authenticates the user. For bucket-access, user-authentication is 
+    // required by all versions of Couchbase Server starting with 5.0. This particular
+    // authentication assumes that Couchbase Server features a user with username 'bucket-sample'
+    // and password 'bucket-sample': use the Security interface of the Couchbase Web Console to
+    // establish this user, and to assign them the 'Bucket Full Access' role. See the Couchbase
+    // Server Security documentation for 5.0, for more information on Authorization and Couchbase
+    // RBAC. To use this node.js program with versions of Couchbase Server prior to 5.0, comment
+    // out the following line.
+    //
+    myCluster.authenticate('beer-sample', 'beer-sample');
+	
     var myBucket = myCluster.openBucket('beer-sample');
     
     // Array to hold documents returned from Couchbase.
